@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SkillSetu — API Test Client</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', sans-serif; background: #0f1117; color: #e2e8f0; min-height: 100vh; }
+  header { background: linear-gradient(135deg, #1e3a8a, #7c3aed); padding: 20px 32px; display: flex; align-items: center; gap: 12px; }
+  header h1 { font-size: 1.4rem; font-weight: 700; }
+  header span { font-size: 0.8rem; background: rgba(255,255,255,0.2); padding: 3px 10px; border-radius: 99px; }
+  .status-bar { background: #1e2535; border-bottom: 1px solid #2d3748; padding: 8px 32px; display: flex; align-items: center; gap: 8px; font-size: 0.8rem; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: #22c55e; animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+  .container { display: grid; grid-template-columns: 220px 1fr; min-height: calc(100vh - 100px); }
+  nav { background: #161b27; border-right: 1px solid #2d3748; padding: 16px 0; }
+  nav button { display: block; width: 100%; text-align: left; padding: 10px 20px; background: none; border: none; color: #94a3b8; cursor: pointer; font-size: 0.85rem; transition: all .2s; }
+  nav button:hover, nav button.active { background: #1e2d4a; color: #60a5fa; border-left: 3px solid #3b82f6; }
+  main { padding: 28px 32px; overflow-y: auto; }
+  .panel { display: none; }
+  .panel.active { display: block; }
+  h2 { font-size: 1.1rem; font-weight: 600; margin-bottom: 16px; color: #93c5fd; border-bottom: 1px solid #2d3748; padding-bottom: 8px; }
+  .form-group { margin-bottom: 14px; }
+  label { display: block; font-size: 0.78rem; color: #94a3b8; margin-bottom: 5px; text-transform: uppercase; letter-spacing: .05em; }
+  input, textarea, select { width: 100%; padding: 9px 12px; background: #1e2535; border: 1px solid #374151; border-radius: 8px; color: #e2e8f0; font-size: 0.9rem; outline: none; transition: border .2s; }
+  input:focus, textarea:focus, select:focus { border-color: #3b82f6; }
+  textarea { resize: vertical; min-height: 100px; font-family: inherit; }
+  .btn { padding: 9px 20px; border-radius: 8px; border: none; cursor: pointer; font-size: 0.85rem; font-weight: 600; transition: all .2s; }
+  .btn-primary { background: #3b82f6; color: #fff; }
+  .btn-primary:hover { background: #2563eb; }
+  .btn-success { background: #10b981; color: #fff; }
+  .btn-success:hover { background: #059669; }
+  .btn-purple { background: #7c3aed; color: #fff; }
+  .btn-purple:hover { background: #6d28d9; }
+  .btn-sm { padding: 5px 12px; font-size: 0.78rem; }
+  .response-box { margin-top: 16px; background: #0d1117; border: 1px solid #2d3748; border-radius: 8px; padding: 14px; font-family: 'Courier New', monospace; font-size: 0.78rem; max-height: 320px; overflow-y: auto; white-space: pre-wrap; line-height: 1.6; }
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 99px; font-size: 0.72rem; font-weight: 700; }
+  .badge-green { background: #064e3b; color: #34d399; }
+  .badge-yellow { background: #451a03; color: #fbbf24; }
+  .badge-red { background: #450a0a; color: #f87171; }
+  .badge-blue { background: #1e3a5f; color: #60a5fa; }
+  .alert { padding: 10px 14px; border-radius: 8px; font-size: 0.82rem; margin-bottom: 12px; }
+  .alert-info { background: #1e3a5f; border: 1px solid #3b82f6; color: #93c5fd; }
+  .alert-success { background: #064e3b; border: 1px solid #10b981; color: #6ee7b7; }
+  .alert-error { background: #450a0a; border: 1px solid #ef4444; color: #fca5a5; }
+  .token-display { background: #1e2535; border: 1px solid #374151; border-radius: 6px; padding: 8px 12px; font-family: monospace; font-size: 0.72rem; color: #a78bfa; word-break: break-all; margin-top: 8px; }
+  .quiz-question { background: #1a2235; border: 1px solid #2d3748; border-radius: 10px; padding: 16px; margin-bottom: 14px; }
+  .quiz-question p { font-size: 0.9rem; margin-bottom: 10px; font-weight: 500; }
+  .quiz-option { display: flex; align-items: center; gap: 10px; padding: 7px 10px; border-radius: 6px; cursor: pointer; margin-bottom: 6px; border: 1px solid #2d3748; transition: all .2s; }
+  .quiz-option:hover { border-color: #3b82f6; background: #1e2d4a; }
+  .quiz-option input { width: auto; }
+  .quiz-option label { margin: 0; font-size: 0.85rem; color: #cbd5e1; cursor: pointer; text-transform: none; letter-spacing: 0; }
+  .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 20px; }
+  .stat-card { background: #1a2235; border: 1px solid #2d3748; border-radius: 10px; padding: 16px; text-align: center; }
+  .stat-card .val { font-size: 2rem; font-weight: 700; }
+  .stat-card .lbl { font-size: 0.75rem; color: #94a3b8; margin-top: 4px; }
+  .rec-card { background: #1a2235; border: 1px solid #2d3748; border-radius: 10px; padding: 16px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
+  .rec-card .info h3 { font-size: 0.9rem; margin-bottom: 4px; }
+  .rec-card .info p { font-size: 0.78rem; color: #94a3b8; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+  th { padding: 8px 12px; text-align: left; background: #1a2235; color: #94a3b8; font-weight: 600; font-size: 0.75rem; text-transform: uppercase; }
+  td { padding: 8px 12px; border-bottom: 1px solid #1e2535; }
+  .row { display: flex; gap: 12px; align-items: flex-end; }
+  .row .form-group { flex: 1; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🎓 SkillSetu — API Test Client</h1>
+  <span>SIH26101 · MoSPI</span>
+</header>
+
+<div class="status-bar">
+  <div class="dot"></div>
+  <span>Backend: <strong>http://localhost:8000</strong></span>
+  <span style="margin-left:16px;color:#94a3b8;">Token: </span>
+  <span id="token-status" style="color:#f87171;">Not logged in</span>
+</div>
+
+<div class="container">
+  <nav>
+    <button class="active" onclick="showPanel('auth')">🔐 Auth</button>
+    <button onclick="showPanel('materials')">📄 Materials</button>
+    <button onclick="showPanel('quiz')">📝 Quiz</button>
+    <button onclick="showPanel('dashboard')">📊 Dashboard</button>
+    <button onclick="showPanel('recommendations')">🎯 Recommendations</button>
+    <button onclick="showPanel('raw')">⚡ Raw Request</button>
+  </nav>
+
+  <main>
+
+    <!-- AUTH PANEL -->
+    <div id="panel-auth" class="panel active">
+      <h2>🔐 Authentication</h2>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px">
+        <div>
+          <p style="font-size:.8rem;color:#64748b;margin-bottom:14px">REGISTER</p>
+          <div class="form-group"><label>Name</label><input id="reg-name" placeholder="Aditya Mishra" /></div>
+          <div class="form-group"><label>Email</label><input id="reg-email" placeholder="aditya@mospi.gov.in" /></div>
+          <div class="form-group"><label>Password</label><input id="reg-pass" type="password" placeholder="min 6 chars" /></div>
+          <button class="btn btn-primary" onclick="doRegister()">Register →</button>
+          <div id="reg-response" class="response-box" style="display:none"></div>
+        </div>
+        <div>
+          <p style="font-size:.8rem;color:#64748b;margin-bottom:14px">LOGIN</p>
+          <div class="form-group"><label>Email</label><input id="login-email" placeholder="aditya@mospi.gov.in" /></div>
+          <div class="form-group"><label>Password</label><input id="login-pass" type="password" placeholder="password" /></div>
+          <button class="btn btn-success" onclick="doLogin()">Login →</button>
+          <div id="login-response" class="response-box" style="display:none"></div>
+        </div>
+      </div>
+
+      <div style="margin-top:20px">
+        <h2>👤 Current User Profile (GET /auth/me)</h2>
+        <button class="btn btn-purple" onclick="doGetMe()">Fetch My Profile</button>
+        <div id="me-response" class="response-box" style="display:none"></div>
+      </div>
+    </div>
+
+    <!-- MATERIALS PANEL -->
+    <div id="panel-materials" class="panel">
+      <h2>📄 Learning Materials</h2>
+      <div class="alert alert-info">Paste learning text below, tag it to a competency area, then generate an AI quiz from it.</div>
+
+      <div class="form-group"><label>Title</label><input id="mat-title" placeholder="Survey Design Fundamentals" /></div>
+      <div class="form-group">
+        <label>Competency Area</label>
+        <select id="mat-area">
+          <option>Survey Design</option>
+          <option>Data Collection</option>
+          <option>Field Methodology</option>
+          <option>Statistical Analysis</option>
+          <option>Sampling Techniques</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Learning Material Text</label>
+        <textarea id="mat-text" placeholder="Paste your learning material text here. The AI will generate MCQ questions from this content...">Survey design is the process of creating the structure and methodology for collecting data. Pre-testing questionnaires is a critical step that helps identify ambiguous questions, routing errors, and potential sources of non-sampling error before large-scale deployment. Social desirability bias occurs when respondents answer questions in a manner they believe will be viewed favorably rather than answering truthfully. Filter questions control the flow of questionnaire items based on respondent eligibility and help reduce respondent burden significantly.</textarea>
+      </div>
+      <div style="display:flex;gap:10px;margin-bottom:16px">
+        <button class="btn btn-primary" onclick="doCreateMaterial()">Upload Material</button>
+        <button class="btn btn-success" onclick="doListMaterials()">List My Materials</button>
+      </div>
+      <div id="mat-response" class="response-box" style="display:none"></div>
+
+      <div style="margin-top:20px">
+        <h2>🤖 Generate AI Quiz from Material</h2>
+        <div class="row">
+          <div class="form-group"><label>Material ID</label><input id="gen-material-id" placeholder="paste material _id here" /></div>
+          <button class="btn btn-purple" style="margin-bottom:14px" onclick="doGenerateQuiz()">Generate Quiz →</button>
+        </div>
+        <div id="gen-response" class="response-box" style="display:none"></div>
+      </div>
+    </div>
+
+    <!-- QUIZ PANEL -->
+    <div id="panel-quiz" class="panel">
+      <h2>📝 Take Quiz</h2>
+      <div class="row">
+        <div class="form-group"><label>Quiz ID</label><input id="quiz-id-input" placeholder="paste quiz_id here" /></div>
+        <button class="btn btn-primary" style="margin-bottom:14px" onclick="doFetchQuiz()">Load Quiz</button>
+      </div>
+      <div id="quiz-questions-container"></div>
+      <div id="quiz-submit-section" style="display:none;margin-top:16px">
+        <button class="btn btn-success" onclick="doSubmitQuiz()">Submit Answers →</button>
+      </div>
+      <div id="quiz-result" class="response-box" style="display:none"></div>
+    </div>
+
+    <!-- DASHBOARD PANEL -->
+    <div id="panel-dashboard" class="panel">
+      <h2>📊 Competency Dashboard</h2>
+      <button class="btn btn-primary" onclick="doDashboard()" style="margin-bottom:20px">Load Dashboard</button>
+      <div id="dashboard-stats" class="stat-grid" style="display:none">
+        <div class="stat-card"><div class="val" id="d-total">0</div><div class="lbl">Total Quizzes</div></div>
+        <div class="stat-card"><div class="val" style="color:#22c55e" id="d-strong">0</div><div class="lbl">Strong Areas</div></div>
+        <div class="stat-card"><div class="val" style="color:#f59e0b" id="d-moderate">0</div><div class="lbl">Moderate Areas</div></div>
+        <div class="stat-card"><div class="val" style="color:#ef4444" id="d-weak">0</div><div class="lbl">Weak Areas</div></div>
+      </div>
+      <div id="dashboard-table" style="display:none">
+        <h2 style="margin-bottom:12px">Competency Breakdown</h2>
+        <table>
+          <thead><tr><th>Competency Area</th><th>Latest Score</th><th>Average Score</th><th>Gap Level</th><th>Attempts</th></tr></thead>
+          <tbody id="dashboard-tbody"></tbody>
+        </table>
+      </div>
+      <div id="dashboard-response" class="response-box" style="display:none"></div>
+    </div>
+
+    <!-- RECOMMENDATIONS PANEL -->
+    <div id="panel-recommendations" class="panel">
+      <h2>🎯 Personalized Recommendations</h2>
+      <button class="btn btn-primary" onclick="doRecommendations()" style="margin-bottom:20px">Get Recommendations</button>
+      <div id="rec-cards"></div>
+      <div id="rec-response" class="response-box" style="display:none"></div>
+    </div>
+
+    <!-- RAW REQUEST PANEL -->
+    <div id="panel-raw" class="panel">
+      <h2>⚡ Raw API Request</h2>
+      <div class="row">
+        <div class="form-group" style="flex:0 0 100px">
+          <label>Method</label>
+          <select id="raw-method"><option>GET</option><option>POST</option><option>PUT</option><option>DELETE</option></select>
+        </div>
+        <div class="form-group">
+          <label>Endpoint</label>
+          <input id="raw-url" placeholder="/health" value="/health" />
+        </div>
+      </div>
+      <div class="form-group"><label>Request Body (JSON)</label><textarea id="raw-body" placeholder='{"key": "value"}' style="min-height:80px"></textarea></div>
+      <button class="btn btn-primary" onclick="doRawRequest()">Send Request</button>
+      <div id="raw-response" class="response-box" style="display:none"></div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+const BASE_URL = "http://localhost:8000";
+let authToken = localStorage.getItem("skillsetu_token") || "";
+let currentQuizId = "";
+let currentQuizQuestions = [];
+
+// Update token status bar on load
+updateTokenStatus();
+
+function updateTokenStatus() {
+  const el = document.getElementById("token-status");
+  if (authToken) {
+    el.textContent = "✅ Logged in";
+    el.style.color = "#22c55e";
+  } else {
+    el.textContent = "❌ Not logged in";
+    el.style.color = "#f87171";
+  }
+}
+
+function showPanel(name) {
+  document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
+  document.querySelectorAll("nav button").forEach(b => b.classList.remove("active"));
+  document.getElementById("panel-" + name).classList.add("active");
+  event.target.classList.add("active");
+}
+
+function showResponse(elId, data, isError) {
+  const el = document.getElementById(elId);
+  el.style.display = "block";
+  el.style.color = isError ? "#f87171" : "#86efac";
+  el.textContent = JSON.stringify(data, null, 2);
+}
+
+function gapBadge(level) {
+  const map = { Strong: "badge-green", Moderate: "badge-yellow", Weak: "badge-red" };
+  return `<span class="badge ${map[level] || 'badge-blue'}">${level}</span>`;
+}
+
+async function apiFetch(endpoint, method = "GET", body = null, useToken = true) {
+  const headers = { "Content-Type": "application/json" };
+  if (useToken && authToken) headers["Authorization"] = `Bearer ${authToken}`;
+  const opts = { method, headers };
+  if (body) opts.body = JSON.stringify(body);
+  const res = await fetch(BASE_URL + endpoint, opts);
+  const json = await res.json().catch(() => ({ error: "Non-JSON response" }));
+  return { ok: res.ok, status: res.status, data: json };
+}
+
+// AUTH
+async function doRegister() {
+  const name = document.getElementById("reg-name").value;
+  const email = document.getElementById("reg-email").value;
+  const password = document.getElementById("reg-pass").value;
+  const r = await apiFetch("/auth/register", "POST", { name, email, password }, false);
+  if (r.ok && r.data.access_token) {
+    authToken = r.data.access_token;
+    localStorage.setItem("skillsetu_token", authToken);
+    updateTokenStatus();
+  }
+  showResponse("reg-response", r.data, !r.ok);
+}
+
+async function doLogin() {
+  const email = document.getElementById("login-email").value;
+  const password = document.getElementById("login-pass").value;
+  const r = await apiFetch("/auth/login", "POST", { email, password }, false);
+  if (r.ok && r.data.access_token) {
+    authToken = r.data.access_token;
+    localStorage.setItem("skillsetu_token", authToken);
+    updateTokenStatus();
+  }
+  showResponse("login-response", r.data, !r.ok);
+}
+
+async function doGetMe() {
+  const r = await apiFetch("/auth/me");
+  showResponse("me-response", r.data, !r.ok);
+}
+
+// MATERIALS
+async function doCreateMaterial() {
+  const title = document.getElementById("mat-title").value;
+  const competency_area = document.getElementById("mat-area").value;
+  const raw_text = document.getElementById("mat-text").value;
+  const r = await apiFetch("/materials", "POST", { title, competency_area, raw_text });
+  if (r.ok) {
+    document.getElementById("gen-material-id").value = r.data._id || "";
+    showResponse("mat-response", { "✅ Material created": r.data }, false);
+  } else {
+    showResponse("mat-response", r.data, true);
+  }
+}
+
+async function doListMaterials() {
+  const r = await apiFetch("/materials");
+  showResponse("mat-response", r.data, !r.ok);
+}
+
+async function doGenerateQuiz() {
+  const id = document.getElementById("gen-material-id").value.trim();
+  if (!id) return showResponse("gen-response", { error: "Enter a material ID" }, true);
+  showResponse("gen-response", { status: "Calling Gemini AI... please wait ⏳" }, false);
+  const r = await apiFetch(`/materials/${id}/generate-quiz`, "POST");
+  if (r.ok) {
+    document.getElementById("quiz-id-input").value = r.data.quiz_id || "";
+    showResponse("gen-response", { "✅ Quiz generated": r.data }, false);
+  } else {
+    showResponse("gen-response", r.data, true);
+  }
+}
+
+// QUIZ
+async function doFetchQuiz() {
+  const id = document.getElementById("quiz-id-input").value.trim();
+  if (!id) return;
+  const r = await apiFetch(`/quizzes/${id}`);
+  if (!r.ok) {
+    document.getElementById("quiz-questions-container").innerHTML = "";
+    document.getElementById("quiz-result").style.display = "block";
+    document.getElementById("quiz-result").style.color = "#f87171";
+    document.getElementById("quiz-result").textContent = JSON.stringify(r.data, null, 2);
+    return;
+  }
+  currentQuizId = id;
+  currentQuizQuestions = r.data.questions || [];
+  renderQuizQuestions(r.data);
+}
+
+function renderQuizQuestions(quiz) {
+  const c = document.getElementById("quiz-questions-container");
+  c.innerHTML = `<div class="alert alert-info" style="margin-bottom:16px">📝 <strong>${quiz.competency_area}</strong> — ${quiz.questions.length} questions</div>`;
+  quiz.questions.forEach((q, i) => {
+    c.innerHTML += `<div class="quiz-question">
+      <p>${i + 1}. ${q.question}</p>
+      ${q.options.map((opt, oi) => `
+        <div class="quiz-option">
+          <input type="radio" name="q${i}" id="q${i}o${oi}" value="${oi}">
+          <label for="q${i}o${oi}">${String.fromCharCode(65+oi)}. ${opt}</label>
+        </div>`).join("")}
+    </div>`;
+  });
+  document.getElementById("quiz-submit-section").style.display = "block";
+  document.getElementById("quiz-result").style.display = "none";
+}
+
+async function doSubmitQuiz() {
+  const answers = currentQuizQuestions.map((_, i) => {
+    const sel = document.querySelector(`input[name="q${i}"]:checked`);
+    return sel ? parseInt(sel.value) : 0;
+  });
+  const r = await apiFetch(`/quizzes/${currentQuizId}/submit`, "POST", { answers });
+  const el = document.getElementById("quiz-result");
+  el.style.display = "block";
+  if (r.ok) {
+    const d = r.data;
+    el.style.color = "#e2e8f0";
+    el.innerHTML = `Score: <strong style="font-size:1.3em">${d.score_percent}%</strong>  |  ${d.correct_count}/${d.total_questions} correct  |  Gap Level: ${gapBadge(d.gap_level)}\n\n${JSON.stringify(d.question_reviews?.map(r => ({q: r.question, yours: r.options[r.user_answer_index], correct: r.options[r.correct_index], ok: r.is_correct})), null, 2)}`;
+  } else {
+    el.style.color = "#f87171";
+    el.textContent = JSON.stringify(r.data, null, 2);
+  }
+}
+
+// DASHBOARD
+async function doDashboard() {
+  const r = await apiFetch("/dashboard");
+  if (r.ok) {
+    const d = r.data;
+    document.getElementById("d-total").textContent = d.total_quizzes_taken;
+    document.getElementById("d-strong").textContent = d.strong_areas_count;
+    document.getElementById("d-moderate").textContent = d.moderate_areas_count;
+    document.getElementById("d-weak").textContent = d.weak_areas_count;
+    document.getElementById("dashboard-stats").style.display = "grid";
+    const tbody = document.getElementById("dashboard-tbody");
+    tbody.innerHTML = "";
+    (d.competency_breakdown || []).forEach(c => {
+      tbody.innerHTML += `<tr>
+        <td>${c.competency_area}</td>
+        <td>${c.latest_score_percent}%</td>
+        <td>${c.average_score_percent}%</td>
+        <td>${gapBadge(c.gap_level)}</td>
+        <td>${c.attempts_count}</td>
+      </tr>`;
+    });
+    document.getElementById("dashboard-table").style.display = "block";
+    showResponse("dashboard-response", d, false);
+  } else {
+    showResponse("dashboard-response", r.data, true);
+  }
+}
+
+// RECOMMENDATIONS
+async function doRecommendations() {
+  const r = await apiFetch("/recommendations");
+  const container = document.getElementById("rec-cards");
+  container.innerHTML = "";
+  if (r.ok && Array.isArray(r.data)) {
+    if (r.data.length === 0) {
+      container.innerHTML = `<div class="alert alert-success">🎉 No weak/moderate areas found! Take a quiz first to get recommendations.</div>`;
+    }
+    r.data.forEach(rec => {
+      const c = rec.recommended_course;
+      container.innerHTML += `<div class="rec-card">
+        <div class="info">
+          <h3>${rec.competency_area} ${gapBadge(rec.gap_level)}</h3>
+          <p>${c ? c.course_title : 'No course found'}</p>
+          <p style="margin-top:4px;color:#6b7280">${c ? c.description : ''}</p>
+        </div>
+        <button class="btn btn-purple btn-sm" onclick="doSyncIGOT('${rec.competency_area}', this)">Sync iGOT →</button>
+      </div>`;
+    });
+    showResponse("rec-response", r.data, false);
+  } else {
+    showResponse("rec-response", r.data, true);
+  }
+}
+
+async function doSyncIGOT(area, btn) {
+  btn.textContent = "Syncing...";
+  btn.disabled = true;
+  const encoded = encodeURIComponent(area);
+  const r = await apiFetch(`/recommendations/${encoded}/sync-igot`, "POST");
+  if (r.ok) {
+    btn.textContent = `✅ ${r.data.igot_course_code}`;
+    btn.style.background = "#064e3b";
+  } else {
+    btn.textContent = "❌ Failed";
+    btn.disabled = false;
+  }
+}
+
+// RAW REQUEST
+async function doRawRequest() {
+  const method = document.getElementById("raw-method").value;
+  const url = document.getElementById("raw-url").value;
+  const bodyText = document.getElementById("raw-body").value.trim();
+  let body = null;
+  if (bodyText) try { body = JSON.parse(bodyText); } catch(e) { return showResponse("raw-response", {error:"Invalid JSON body"}, true); }
+  const r = await apiFetch(url, method, body);
+  showResponse("raw-response", r.data, !r.ok);
+}
+</script>
+</body>
+</html>
