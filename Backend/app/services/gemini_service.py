@@ -238,7 +238,7 @@ Important rules:
 
 Learning Material:
 \"\"\"
-{text[:4000]}
+{text[:10000]}
 \"\"\"
 """
         response = client.models.generate_content(

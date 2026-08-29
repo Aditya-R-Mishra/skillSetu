@@ -23,6 +23,9 @@ export default function NavBar() {
           <Link to="/materials" className={linkClass("/materials")}>
             Materials
           </Link>
+          <Link to="/recommendations" className={linkClass("/recommendations")}>
+            Recommendations
+          </Link>
         </div>
         <div className="flex items-center gap-3">
           {user?.name && (

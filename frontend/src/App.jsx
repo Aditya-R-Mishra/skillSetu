@@ -6,6 +6,7 @@ import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import Materials from "./pages/Materials";
 import QuizTake from "./pages/QuizTake";
+import Recommendations from "./pages/Recommendations";
 
 export default function App() {
   return (
@@ -35,6 +36,14 @@ export default function App() {
             element={
               <ProtectedRoute>
                 <QuizTake />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/recommendations"
+            element={
+              <ProtectedRoute>
+                <Recommendations />
               </ProtectedRoute>
             }
           />

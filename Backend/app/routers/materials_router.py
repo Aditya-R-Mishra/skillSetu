@@ -24,9 +24,8 @@ async def create_material(
     if db is None:
         raise HTTPException(status_code=500, detail="Database connection unavailable")
         
-    if not material_in.raw_text or not material_in.raw_text.strip():
-        raise HTTPException(status_code=400, detail="Learning material text content cannot be empty.")
-
+    # All text validation (empty, word count, alpha content) is handled
+    # by @field_validator in MaterialCreate schema (see schemas/material.py)
     user_id_str = str(current_user["_id"])
     material_doc = {
         "user_id": ObjectId(user_id_str),
@@ -64,20 +63,50 @@ async def upload_pdf_material(
     if db is None:
         raise HTTPException(status_code=500, detail="Database connection unavailable")
 
-    if not file.filename.endswith(".pdf"):
-        raise HTTPException(status_code=400, detail="Only PDF files are supported.")
+    # --- Form field validation (bypasses Pydantic since these are Form params) ---
+    title_clean = title.strip()
+    area_clean = competency_area.strip()
+
+    if not title_clean or not any(c.isalpha() for c in title_clean):
+        raise HTTPException(
+            status_code=400,
+            detail="Title cannot be empty and must contain readable letters."
+        )
+    if len(title_clean) < 3 or len(title_clean) > 150:
+        raise HTTPException(
+            status_code=400,
+            detail="Title must be between 3 and 150 characters."
+        )
+    if not area_clean or not any(c.isalpha() for c in area_clean):
+        raise HTTPException(
+            status_code=400,
+            detail="Competency area cannot be empty and must contain readable text."
+        )
+
+    # --- File type validation: extension + MIME type ---
+    safe_filename = file.filename or "upload.pdf"
+    if not safe_filename.lower().endswith(".pdf"):
+        raise HTTPException(
+            status_code=400,
+            detail="Only PDF files are accepted. Please upload a file with a .pdf extension."
+        )
+    if file.content_type and file.content_type not in ("application/pdf", "application/x-pdf"):
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid file type '{file.content_type}'. Only PDF files are accepted."
+        )
 
     pdf_bytes = await file.read()
     try:
-        extracted_text = extract_text_from_pdf_bytes(pdf_bytes)
+        extracted_text = extract_text_from_pdf_bytes(pdf_bytes, filename=safe_filename)
     except ValueError as ve:
         raise HTTPException(status_code=400, detail=str(ve))
 
     user_id_str = str(current_user["_id"])
     material_doc = {
         "user_id": ObjectId(user_id_str),
-        "title": title,
-        "competency_area": competency_area,
+        "title": title_clean,
+        "competency_area": area_clean,
         "raw_text": extracted_text,
         "file_type": "pdf",
         "created_at": datetime.now(timezone.utc)
@@ -89,8 +118,8 @@ async def upload_pdf_material(
     return MaterialOut(
         _id=material_id_str,
         user_id=user_id_str,
-        title=title,
-        competency_area=competency_area,
+        title=title_clean,
+        competency_area=area_clean,
         raw_text=extracted_text,
         file_type="pdf",
         created_at=material_doc["created_at"]
@@ -173,12 +202,28 @@ async def generate_quiz_for_material(
     if not material:
         raise HTTPException(status_code=404, detail="Material not found")
 
+    # Ownership check: only the material's author can generate a quiz from it
+    if str(material["user_id"]) != str(current_user["_id"]):
+        raise HTTPException(status_code=403, detail="You are not authorized to generate a quiz for this material.")
+
+    # Dynamic question count based on content length
+    # Short (<500 words) → 10, Medium (<1500) → 15, Long (<3000) → 20, Very Long → 25
+    word_count = len(material["raw_text"].split())
+    if word_count < 500:
+        num_questions = 10
+    elif word_count < 1500:
+        num_questions = 15
+    elif word_count < 3000:
+        num_questions = 20
+    else:
+        num_questions = 25
+
     # Generate MCQs using AI service
     mcqs = await generate_mcqs_from_text(
         text=material["raw_text"],
         competency_area=material["competency_area"],
         title=material["title"],
-        num_questions=5
+        num_questions=num_questions
     )
 
     user_id_str = str(current_user["_id"])
